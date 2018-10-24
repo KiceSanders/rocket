@@ -2,7 +2,7 @@
 
 /**
 @typedef
-    {{key: (string|number), desc: boolean, type: string, null: boolean}}
+    {{key: (string|number), desc: boolean, type: string, comparator: function, null: boolean}}
 */
 rocket.SortKey_;
 
@@ -21,6 +21,9 @@ This method changes the original Array.
 Supported types are: number, money, date, static, and string.  If not specified
 or not a supported type, string comparison is used.  Static comparison forces
 no casting to happen before comparison.
+
+If a comparator is set, type is disregarded.  A comparator can be any function
+that could be used as the compare function to Array.sort(fn).
 
 Setting null to true causes null values to be sorted first instead of last.
 
@@ -102,6 +105,13 @@ rocket.sort(foo, {'key': 'a', 'type': 'money'});
 var foo = [{'a': '($200.00)'}, {'a': '($10.00)'}, {'a': '-$300'}];
 rocket.sort(foo, {'key': 'a', 'type': 'money'});
 
+@test {[{'a': 'A'}, {'a': 'b'}, {'a': 'C'}]}
+  Sort the Array using case insensitive custom comparator.
+var foo = [{'a': 'A'}, {'a': 'C'}, {'a': 'b'}];
+rocket.sort(foo, {'key': 'a', 'comparator': function(a, b) {
+  return a.toLowerCase() > b.toLowerCase() ? 1 : -1;
+}});
+
 */
 rocket.sort = function(arr, var_args) {
 
@@ -171,7 +181,12 @@ rocket.sort = function(arr, var_args) {
 
       }
 
-      if (column.type === 'number') {
+      if (column.comparator) {
+
+        left = column.comparator(left, right);
+        right = 0;
+
+      } else if (column.type === 'number') {
 
         left = +left;
         right = +right;
